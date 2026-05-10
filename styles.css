@@ -165,6 +165,67 @@ body {
   font-weight: bold;
 }
 
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin-top: 30px;
+  padding-bottom: 30px;
+}
+
+.pagination-btn {
+  background: #222;
+  color: var(--gold);
+  border: 1px solid var(--gold);
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background: var(--gold);
+  color: #000;
+}
+
+.pagination-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pagination-info {
+  color: var(--gold);
+  font-weight: bold;
+}
+
+.whatsapp-float {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 60px;
+  height: 60px;
+  background: #25D366;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 1000;
+  box-shadow: 0 6px 18px rgba(37, 211, 102, 0.25);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.whatsapp-float:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(37, 211, 102, 0.35);
+}
+
+.whatsapp-float i {
+  color: #fff;
+  font-size: 28px;
+}
+
 /* Stats */
 .stats-section { background: #111; padding: 60px 0; text-align: center; }
 .stats-grid { display: flex; justify-content: center; gap: 50px; flex-wrap: wrap; }
@@ -560,5 +621,13 @@ footer { text-align: center; padding: 30px; background: #000; border-top: 1px so
   }
   .gallery-right h2 {
     margin-top: 20px;
+  }
+  .property-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 18px;
+  }
+  .whatsapp-float {
+    width: 54px;
+    height: 54px;
   }
 }

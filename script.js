@@ -17,6 +17,25 @@ function parseImageGallery(value) {
   return [value];
 }
 
+// Helper functions for property type extraction
+function extractPropertyTypeFromDescription(property) {
+  // Extract property type from description if prefixed with [TYPE]
+  const description = property.description || '';
+  const typeMatch = description.match(/^\[([^\]]+)\]/);
+  if (typeMatch) {
+    return typeMatch[1];
+  }
+  // Fallback to status for legacy properties
+  return property.status ? property.status.toUpperCase() : 'N/A';
+}
+
+function getCleanDescription(description) {
+  // Remove the [TYPE] prefix from description for display
+  if (!description) return '';
+  const typeMatch = description.match(/^\[([^\]]+)\]\s*(.*)$/);
+  return typeMatch ? typeMatch[2] : description;
+}
+
 // Hero slider
 let currentSlide = 0;
 const slides = document.querySelectorAll('.slide');
@@ -43,24 +62,56 @@ async function loadAllProperties() {
   if (!grid) return;
   const { data, error } = await window.supabaseClient.from('properties').select('*');
   if (error) console.error(error);
-  else displayProperties(data, grid);
+  else {
+    window.allProperties = data;
+    displayProperties(data, grid);
+  }
   
-  const filter = document.getElementById('statusFilter');
+  const filter = document.getElementById('typeFilter');
   if (filter) {
     filter.addEventListener('change', () => {
       const val = filter.value;
-      const filtered = val === 'all' ? data : data.filter(p => p.status === val);
-      displayProperties(filtered, grid);
+      const filtered = val === 'all' ? window.allProperties : window.allProperties.filter(p => {
+        const propertyType = extractPropertyTypeFromDescription(p).toLowerCase().replace(/\s+/g, '-');
+        return propertyType === val;
+      });
+      const gridElement = document.getElementById('allPropertiesGrid');
+      if (gridElement) {
+        gridElement.dataset.currentPage = '1';
+        displayProperties(filtered, gridElement);
+      }
     });
   }
 }
 
 function displayProperties(properties, container) {
-  if (!properties.length) { container.innerHTML = '<p style="text-align:center">No properties found.</p>'; return; }
+  if (!properties.length) {
+    container.innerHTML = '<p style="text-align:center">No properties found.</p>';
+    const existingPagination = container.parentNode.querySelector('.pagination');
+    if (existingPagination) existingPagination.remove();
+    return;
+  }
   window.propertyDataMap = window.propertyDataMap || {};
   properties.forEach(p => { window.propertyDataMap[p.id] = p; });
-  container.innerHTML = properties.map(p => {
+
+  const isMobile = window.innerWidth <= 768;
+  const itemsPerPage = isMobile ? 10 : properties.length;
+  const totalPages = Math.max(1, Math.ceil(properties.length / itemsPerPage));
+
+  if (!container.dataset.currentPage || parseInt(container.dataset.currentPage, 10) < 1) {
+    container.dataset.currentPage = '1';
+  }
+  let currentPage = parseInt(container.dataset.currentPage, 10);
+  if (currentPage > totalPages) currentPage = totalPages;
+  container.dataset.currentPage = String(currentPage);
+
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const propertiesToShow = properties.slice(startIndex, endIndex);
+
+  container.innerHTML = propertiesToShow.map(p => {
     const safeId = String(p.id).replace(/'/g, "\\'");
+    const propertyType = extractPropertyTypeFromDescription(p);
     return `
     <div class="property-card">
       <img src="${p.image_url}" onerror="this.src='https://placehold.co/600x400?text=Luxury+Home'" style="cursor:pointer;" onclick="openPropertyGallery('${safeId}')">
@@ -68,14 +119,59 @@ function displayProperties(properties, container) {
         <h3>${p.title}</h3>
         <p><i class="fas fa-map-marker-alt gold"></i> ${p.location}</p>
         <div class="price">${p.price}</div>
-        <span class="status-badge">${p.status.toUpperCase()}</span>
-        <p style="margin-top:10px">${p.description.substring(0,100)}...</p>
+        <span class="status-badge">${propertyType}</span>
+        <p style="margin-top:10px">${getCleanDescription(p.description).substring(0,100)}...</p>
         <button class="contact-btn" onclick="contactViaWhatsApp('${safeId}')">Contact Us</button>
       </div>
     </div>
   `;
   }).join('');
+
+  const existingPagination = container.parentNode.querySelector('.pagination');
+  if (isMobile && totalPages > 1) {
+    let paginationHtml = '<div class="pagination">';
+    paginationHtml += `<button class="pagination-btn" onclick="changePage('${container.id}', ${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>Previous</button>`;
+    paginationHtml += `<span class="pagination-info">Page ${currentPage} of ${totalPages}</span>`;
+    paginationHtml += `<button class="pagination-btn" onclick="changePage('${container.id}', ${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>Next</button>`;
+    paginationHtml += '</div>';
+    if (existingPagination) existingPagination.remove();
+    container.insertAdjacentHTML('afterend', paginationHtml);
+  } else if (existingPagination) {
+    existingPagination.remove();
+  }
 }
+
+function changePage(containerId, newPage) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  const filter = document.getElementById('typeFilter');
+  let properties = window.allProperties || [];
+  if (filter && filter.value !== 'all') {
+    properties = properties.filter(p => {
+      const propertyType = extractPropertyTypeFromDescription(p).toLowerCase().replace(/\s+/g, '-');
+      return propertyType === filter.value;
+    });
+  }
+  const totalPages = Math.max(1, Math.ceil(properties.length / (window.innerWidth <= 768 ? 10 : properties.length)));
+  const nextPage = Math.min(Math.max(newPage, 1), totalPages);
+  container.dataset.currentPage = String(nextPage);
+  displayProperties(properties, container);
+}
+
+window.addEventListener('resize', () => {
+  const grid = document.getElementById('allPropertiesGrid');
+  if (grid && window.allProperties) {
+    const filter = document.getElementById('typeFilter');
+    let properties = window.allProperties;
+    if (filter && filter.value !== 'all') {
+      properties = properties.filter(p => {
+        const propertyType = extractPropertyTypeFromDescription(p).toLowerCase().replace(/\s+/g, '-');
+        return propertyType === filter.value;
+      });
+    }
+    displayProperties(properties, grid);
+  }
+});
 
 function openPropertyGallery(id) {
   const property = window.propertyDataMap[id];
@@ -97,8 +193,8 @@ function openPropertyGallery(id) {
   galleryTitle.textContent = property.title;
   galleryLocation.textContent = property.location;
   galleryPrice.textContent = property.price;
-  galleryStatus.textContent = property.status.toUpperCase();
-  galleryDesc.textContent = property.description;
+  galleryStatus.textContent = extractPropertyTypeFromDescription(property);
+  galleryDesc.textContent = getCleanDescription(property.description);
   galleryCounter.textContent = `${gallery.length ? 1 : 0} / ${gallery.length}`;
   galleryImage.src = gallery[0] || 'https://placehold.co/800x500?text=No+Image';
   galleryThumbs.innerHTML = gallery.map((src, index) => `
@@ -139,7 +235,9 @@ function prevGalleryImage() {
 function contactViaWhatsApp(id) {
   const property = window.propertyDataMap[id];
   if (!property) return;
-  const message = encodeURIComponent(`Hi, I’m interested in this property:\nTitle: ${property.title}\nLocation: ${property.location}\nPrice: ${property.price}\nStatus: ${property.status}\nDescription: ${property.description}`);
+  const propertyType = extractPropertyTypeFromDescription(property);
+  const cleanDesc = getCleanDescription(property.description);
+  const message = encodeURIComponent(`Hi, I’m interested in this property:\nTitle: ${property.title}\nLocation: ${property.location}\nPrice: ${property.price}\nType: ${propertyType}\nDescription: ${cleanDesc}`);
   const url = `https://wa.me/2347034293609?text=${message}`;
   const newWindow = window.open(url, '_blank');
   if (!newWindow) {
@@ -183,7 +281,6 @@ if (loginForm) {
     const { data, error } = await window.supabaseClient.auth.signInWithPassword({ email, password });
     if (error) { alert('Login failed: ' + error.message); return; }
     currentUser = data.user;
-    alert('Login successful! Redirecting to dashboard...');
     window.location.href = 'admin-dashboard.html';
   };
 }

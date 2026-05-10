@@ -30,32 +30,48 @@ async function loadAdminProperties() {
 function renderAdminProperties(properties) {
   const grid = document.getElementById('adminPropertyGrid');
   if (!properties.length) { grid.innerHTML = '<p>No properties added yet.</p>'; return; }
-  grid.innerHTML = properties.map(p => `
+  grid.innerHTML = properties.map(p => {
+    const propertyType = extractPropertyType(p);
+    return `
     <div class="admin-property-card">
       <img src="${p.image_url}" onerror="this.src='https://placehold.co/600x400'">
       <div class="admin-property-info">
         <h3>${p.title}</h3>
         <p>📍 ${p.location}</p>
         <p>💰 ${p.price}</p>
-        <p>🏷️ ${p.status}</p>
+        <p>🏷️ ${propertyType}</p>
         <div class="admin-actions">
           <button class="edit-btn" onclick="editProperty('${p.id}')">Edit</button>
           <button class="delete-btn" onclick="deleteProperty('${p.id}')">Delete</button>
         </div>
       </div>
     </div>
-  `).join('');
+  `;
+  }).join('');
 }
 
 window.editProperty = async (id) => {
   const { data } = await window.supabaseClient.from('properties').select('*').eq('id', id).single();
   if (data) {
     editingId = id;
+    // Extract type from description if it starts with [TYPE]
+    let description = data.description || '';
+    let extractedType = 'detached'; // default
+    
+    const typeMatch = description.match(/^\[([^\]]+)\]\s*(.*)$/);
+    if (typeMatch) {
+      extractedType = typeMatch[1].toLowerCase();
+      description = typeMatch[2]; // Remove the type prefix from description
+    } else {
+      // Fallback to status mapping for existing properties
+      extractedType = mapStatusToPropertyType(data.status);
+    }
+    
     document.getElementById('propertyTitle').value = data.title;
     document.getElementById('propertyLocation').value = data.location;
     document.getElementById('propertyPrice').value = data.price;
-    document.getElementById('propertyStatus').value = data.status;
-    document.getElementById('propertyDescription').value = data.description;
+    document.getElementById('propertyType').value = extractedType;
+    document.getElementById('propertyDescription').value = description;
     
     // Load existing images
     uploadedImageUrls = parseImageGallery(data.image_gallery) || (data.image_url ? [data.image_url] : []);
@@ -160,7 +176,46 @@ if (addBtn) addBtn.onclick = () => {
   document.getElementById('formTitle').innerText = 'Add New Property';
   formModal.style.display = 'flex';
 };
-if (closeFormBtn) closeFormBtn.onclick = () => formModal.style.display = 'none';
+
+if (closeFormBtn) closeFormBtn.onclick = () => {
+  formModal.style.display = 'none';
+};
+
+function mapPropertyTypeToStatus(type) {
+  // Map new property types to database-compatible status values
+  const typeToStatusMap = {
+    'detached': 'sale',
+    'semi-detached': 'sale',
+    'apartments': 'lease',
+    'terrace': 'sale',
+    'townhouse': 'sale',
+    'land': 'sale',
+    'offices': 'lease',
+    'retail': 'lease'
+  };
+  return typeToStatusMap[type] || 'sale'; // Default to 'sale' if type not found
+}
+
+function getPropertyTypeDisplayName(status) {
+  // Map database status values back to display names for legacy properties
+  const statusToDisplayMap = {
+    'sale': 'SALE',
+    'lease': 'LEASE',
+    'rent': 'RENT'
+  };
+  return statusToDisplayMap[status] || 'N/A';
+}
+
+function extractPropertyType(property) {
+  // Extract property type from description if prefixed with [TYPE]
+  const description = property.description || '';
+  const typeMatch = description.match(/^\[([^\]]+)\]/);
+  if (typeMatch) {
+    return typeMatch[1];
+  }
+  // Fallback to status mapping for legacy properties
+  return getPropertyTypeDisplayName(property.status);
+}
 
 propertyForm.onsubmit = async (e) => {
   e.preventDefault();
@@ -195,14 +250,18 @@ propertyForm.onsubmit = async (e) => {
       }
     }
     
+    const selectedType = document.getElementById('propertyType').value;
+    const description = document.getElementById('propertyDescription').value;
+    const enhancedDescription = `[${selectedType.toUpperCase()}] ${description}`;
+    
     const property = {
       title: document.getElementById('propertyTitle').value,
       location: document.getElementById('propertyLocation').value,
       price: document.getElementById('propertyPrice').value,
-      status: document.getElementById('propertyStatus').value,
+      status: mapPropertyTypeToStatus(selectedType),
       image_url: uploadedUrls[0],
       image_gallery: uploadedUrls,
-      description: document.getElementById('propertyDescription').value
+      description: enhancedDescription
     };
 
     const saveProperty = async (payload) => {
