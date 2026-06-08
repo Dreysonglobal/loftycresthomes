@@ -121,7 +121,7 @@ function displayProperties(properties, container) {
         <div class="price">${p.price}</div>
         <span class="status-badge">${propertyType}</span>
         <p style="margin-top:10px">${getCleanDescription(p.description).substring(0,100)}...</p>
-        <button class="contact-btn" onclick="contactViaWhatsApp('${safeId}')">Contact Us</button>
+        <button class="contact-btn" onclick="contactViaWhatsApp('${safeId}')">07070762691</button>
       </div>
     </div>
   `;
@@ -237,8 +237,13 @@ function contactViaWhatsApp(id) {
   if (!property) return;
   const propertyType = extractPropertyTypeFromDescription(property);
   const cleanDesc = getCleanDescription(property.description);
-  const message = encodeURIComponent(`Hi, I’m interested in this property:\nTitle: ${property.title}\nLocation: ${property.location}\nPrice: ${property.price}\nType: ${propertyType}\nDescription: ${cleanDesc}`);
-  const url = `https://wa.me/2347034293609?text=${message}`;
+  const message = encodeURIComponent(`Hi, I’m interested in this property:
+Title: ${property.title}
+Location: ${property.location}
+Price: ${property.price}
+Type: ${propertyType}
+Description: ${cleanDesc}`);
+  const url = `https://wa.me/2347070762691?text=${message}`;
   const newWindow = window.open(url, '_blank');
   if (!newWindow) {
     window.location.href = url;
