@@ -17,6 +17,14 @@ function parseImageGallery(value) {
   return [value];
 }
 
+function formatPrice(value) {
+  if (!value && value !== 0) return '';
+  let s = String(value).trim();
+  if (s.startsWith('$')) s = '₦' + s.slice(1).trim();
+  if (s.startsWith('₦')) return s;
+  return '₦' + s;
+}
+
 // Helper functions for property type extraction
 function extractPropertyTypeFromDescription(property) {
   // Extract property type from description if prefixed with [TYPE]
@@ -118,7 +126,7 @@ function displayProperties(properties, container) {
       <div class="property-details">
         <h3>${p.title}</h3>
         <p><i class="fas fa-map-marker-alt gold"></i> ${p.location}</p>
-        <div class="price">${p.price}</div>
+          <div class="price">${formatPrice(p.price)}</div>
         <span class="status-badge">${propertyType}</span>
         <p style="margin-top:10px">${getCleanDescription(p.description).substring(0,100)}...</p>
         <button class="contact-btn" onclick="contactViaWhatsApp('${safeId}')">07070762691</button>
@@ -192,7 +200,7 @@ function openPropertyGallery(id) {
   modal.style.display = 'flex';
   galleryTitle.textContent = property.title;
   galleryLocation.textContent = property.location;
-  galleryPrice.textContent = property.price;
+  galleryPrice.textContent = formatPrice(property.price);
   galleryStatus.textContent = extractPropertyTypeFromDescription(property);
   galleryDesc.textContent = getCleanDescription(property.description);
   galleryCounter.textContent = `${gallery.length ? 1 : 0} / ${gallery.length}`;
@@ -240,7 +248,7 @@ function contactViaWhatsApp(id) {
   const message = encodeURIComponent(`Hi, I’m interested in this property:
 Title: ${property.title}
 Location: ${property.location}
-Price: ${property.price}
+Price: ${formatPrice(property.price)}
 Type: ${propertyType}
 Description: ${cleanDesc}`);
   const url = `https://wa.me/2347070762691?text=${message}`;

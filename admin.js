@@ -38,16 +38,39 @@ function renderAdminProperties(properties) {
       <div class="admin-property-info">
         <h3>${p.title}</h3>
         <p>📍 ${p.location}</p>
-        <p>💰 ${p.price}</p>
+        <p class="price">${formatPrice(p.price)}</p>
         <p>🏷️ ${propertyType}</p>
         <div class="admin-actions">
-          <button class="edit-btn" onclick="editProperty('${p.id}')">Edit</button>
-          <button class="delete-btn" onclick="deleteProperty('${p.id}')">Delete</button>
+          <button class="edit-btn" data-id="${p.id}">Edit</button>
+          <button class="delete-btn" data-id="${p.id}">Delete</button>
         </div>
       </div>
     </div>
   `;
   }).join('');
+
+  // Attach event listeners to buttons (more reliable than inline onclick)
+  setTimeout(() => {
+    grid.querySelectorAll('.edit-btn').forEach(b => b.addEventListener('click', (e) => {
+      const id = e.currentTarget.getAttribute('data-id');
+      if (id) window.editProperty(id);
+    }));
+    grid.querySelectorAll('.delete-btn').forEach(b => b.addEventListener('click', (e) => {
+      const id = e.currentTarget.getAttribute('data-id');
+      if (id) window.deleteProperty(id);
+    }));
+  }, 0);
+}
+
+function formatPrice(value) {
+  if (!value && value !== 0) return '';
+  let s = String(value).trim();
+  // Replace leading $ with ₦
+  if (s.startsWith('$')) s = '₦' + s.slice(1).trim();
+  // If already has naira sign, return as-is
+  if (s.startsWith('₦')) return s;
+  // Otherwise prefix with naira sign
+  return '₦' + s;
 }
 
 window.editProperty = async (id) => {
