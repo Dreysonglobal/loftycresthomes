@@ -129,7 +129,7 @@ function displayProperties(properties, container) {
           <div class="price">${formatPrice(p.price)}</div>
         <span class="status-badge">${propertyType}</span>
         <p style="margin-top:10px">${getCleanDescription(p.description).substring(0,100)}...</p>
-        <button class="contact-btn" onclick="contactViaWhatsApp('${safeId}')">07070762691</button>
+        <button class="contact-btn" onclick="contactViaWhatsApp('${safeId}')">Click to Chat on WhatsApp</button>
       </div>
     </div>
   `;
@@ -318,7 +318,7 @@ async function addStructuredData() {
   }
 }
 
-// Run loaders - wait for supabase to be ready
+// Run loaders - wait for supabase to be ready 
 async function runLoaders() {
   // Wait for supabase to be initialized
   let attempts = 0;

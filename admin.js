@@ -50,16 +50,23 @@ function renderAdminProperties(properties) {
   }).join('');
 
   // Attach event listeners to buttons (more reliable than inline onclick)
-  setTimeout(() => {
-    grid.querySelectorAll('.edit-btn').forEach(b => b.addEventListener('click', (e) => {
-      const id = e.currentTarget.getAttribute('data-id');
-      if (id) window.editProperty(id);
-    }));
-    grid.querySelectorAll('.delete-btn').forEach(b => b.addEventListener('click', (e) => {
-      const id = e.currentTarget.getAttribute('data-id');
-      if (id) window.deleteProperty(id);
-    }));
-  }, 0);
+  // Use event delegation to handle edit/delete buttons reliably
+  if (!grid._adminListenerAdded) {
+    grid.addEventListener('click', (e) => {
+      const editBtn = e.target.closest('.edit-btn');
+      if (editBtn) {
+        const id = editBtn.getAttribute('data-id');
+        if (id && window.editProperty) window.editProperty(id);
+        return;
+      }
+      const delBtn = e.target.closest('.delete-btn');
+      if (delBtn) {
+        const id = delBtn.getAttribute('data-id');
+        if (id && window.deleteProperty) window.deleteProperty(id);
+      }
+    });
+    grid._adminListenerAdded = true;
+  }
 }
 
 function formatPrice(value) {
