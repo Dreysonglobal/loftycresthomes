@@ -48,25 +48,28 @@ function renderAdminProperties(properties) {
     </div>
   `;
   }).join('');
+  // Attach event listeners directly to each edit/delete button for reliability
+  const editButtons = grid.querySelectorAll('.edit-btn');
+  editButtons.forEach(btn => {
+    btn.removeEventListener('click', btn._adminClickHandler);
+    const handler = (e) => {
+      const id = btn.getAttribute('data-id');
+      if (id && window.editProperty) window.editProperty(id);
+    };
+    btn._adminClickHandler = handler;
+    btn.addEventListener('click', handler);
+  });
 
-  // Attach event listeners to buttons (more reliable than inline onclick)
-  // Use event delegation to handle edit/delete buttons reliably
-  if (!grid._adminListenerAdded) {
-    grid.addEventListener('click', (e) => {
-      const editBtn = e.target.closest('.edit-btn');
-      if (editBtn) {
-        const id = editBtn.getAttribute('data-id');
-        if (id && window.editProperty) window.editProperty(id);
-        return;
-      }
-      const delBtn = e.target.closest('.delete-btn');
-      if (delBtn) {
-        const id = delBtn.getAttribute('data-id');
-        if (id && window.deleteProperty) window.deleteProperty(id);
-      }
-    });
-    grid._adminListenerAdded = true;
-  }
+  const deleteButtons = grid.querySelectorAll('.delete-btn');
+  deleteButtons.forEach(btn => {
+    btn.removeEventListener('click', btn._adminClickHandler);
+    const handler = (e) => {
+      const id = btn.getAttribute('data-id');
+      if (id && window.deleteProperty) window.deleteProperty(id);
+    };
+    btn._adminClickHandler = handler;
+    btn.addEventListener('click', handler);
+  });
 }
 
 function formatPrice(value) {
@@ -224,6 +227,16 @@ function mapPropertyTypeToStatus(type) {
     'retail': 'lease'
   };
   return typeToStatusMap[type] || 'sale'; // Default to 'sale' if type not found
+}
+
+function mapStatusToPropertyType(status) {
+  // Map legacy database status values back to a reasonable property type
+  const statusToType = {
+    'sale': 'detached',
+    'lease': 'apartments',
+    'rent': 'apartments'
+  };
+  return statusToType[status] || 'detached';
 }
 
 function getPropertyTypeDisplayName(status) {
