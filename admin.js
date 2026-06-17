@@ -83,6 +83,11 @@ function formatPrice(value) {
   return '₦' + s;
 }
 
+function cleanPropertyDescription(description) {
+  if (!description) return '';
+  return description.replace(/^\s*(?:\[[^\]]+\]\s*)+/, '').trim();
+}
+
 window.editProperty = async (id) => {
   const { data } = await window.supabaseClient.from('properties').select('*').eq('id', id).single();
   if (data) {
@@ -94,7 +99,7 @@ window.editProperty = async (id) => {
     const typeMatch = description.match(/^\[([^\]]+)\]\s*(.*)$/);
     if (typeMatch) {
       extractedType = typeMatch[1].toLowerCase();
-      description = typeMatch[2]; // Remove the type prefix from description
+      description = cleanPropertyDescription(description); // Remove any repeated type prefix tokens
     } else {
       // Fallback to status mapping for existing properties
       extractedType = mapStatusToPropertyType(data.status);
@@ -294,7 +299,8 @@ propertyForm.onsubmit = async (e) => {
     }
     
     const selectedType = document.getElementById('propertyType').value;
-    const description = document.getElementById('propertyDescription').value;
+    const rawDescription = document.getElementById('propertyDescription').value;
+    const description = cleanPropertyDescription(rawDescription);
     const enhancedDescription = `[${selectedType.toUpperCase()}] ${description}`;
     
     const property = {

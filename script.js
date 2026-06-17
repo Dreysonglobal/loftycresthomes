@@ -38,10 +38,9 @@ function extractPropertyTypeFromDescription(property) {
 }
 
 function getCleanDescription(description) {
-  // Remove the [TYPE] prefix from description for display
+  // Remove any leading [TYPE] prefixes from description for display
   if (!description) return '';
-  const typeMatch = description.match(/^\[([^\]]+)\]\s*(.*)$/);
-  return typeMatch ? typeMatch[2] : description;
+  return description.replace(/^\s*(?:\[[^\]]+\]\s*)+/, '').trim();
 }
 
 // Hero slider
@@ -59,7 +58,10 @@ if (slides.length) {
 async function loadHomeProperties() {
   const grid = document.getElementById('homePropertyGrid');
   if (!grid) return;
-  const { data, error } = await window.supabaseClient.from('properties').select('*').limit(6);
+  const { data, error } = await window.supabaseClient.from('properties')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(6);
   if (error) console.error(error);
   else displayProperties(data, grid);
 }
@@ -68,7 +70,9 @@ async function loadHomeProperties() {
 async function loadAllProperties() {
   const grid = document.getElementById('allPropertiesGrid');
   if (!grid) return;
-  const { data, error } = await window.supabaseClient.from('properties').select('*');
+  const { data, error } = await window.supabaseClient.from('properties')
+    .select('*')
+    .order('created_at', { ascending: false });
   if (error) console.error(error);
   else {
     window.allProperties = data;
