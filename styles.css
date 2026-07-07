@@ -222,6 +222,41 @@ body {
   font-weight: bold;
 }
 
+.social-float {
+  position: fixed;
+  right: 20px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 1000;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  text-decoration: none;
+}
+
+.social-float:hover {
+  transform: translateY(-2px);
+}
+
+.social-float i {
+  color: #fff;
+  font-size: 28px;
+}
+
+.instagram-float {
+  bottom: 90px;
+  background: linear-gradient(45deg, #f58529, #dd2a7b, #8134af, #515bd4);
+  box-shadow: 0 6px 18px rgba(221, 42, 123, 0.25);
+}
+
+.instagram-float:hover {
+  box-shadow: 0 8px 24px rgba(221, 42, 123, 0.35);
+}
+
 .whatsapp-float {
   position: fixed;
   bottom: 20px;
